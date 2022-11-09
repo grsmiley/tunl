@@ -69,8 +69,15 @@ class Step(ABC):
         else:
             return average
 
-    def count(self):
-        return self.queue.qsize()
+    def count(self, recursive=True):
+        if recursive:
+            self_ = {self: self.queue.qsize()}
+            if self.next:
+                next_ = self.next.count(recursive=recursive)
+                self_.update(next_)
+            return self_
+        else:
+            return self.queue.qsize()
 
     def steps(self):
         rightmost = self
