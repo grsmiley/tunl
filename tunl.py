@@ -56,11 +56,18 @@ class Step(ABC):
         if self.next:
             await self.next.queue.join()
 
-    def execution_time(self):
+    def execution_time(self, recursive=False):
         ''' Average execution time in seconds. '''
         average = sum(self._time_samples)/len(self._time_samples)
         average = average / 1000000000
-        return average
+        if recursive:
+            self_ = {self: average}
+            if self.next:
+                next_ = self.next.execution_time(recursive=recursive)
+                self_.update(next_)
+            return self_
+        else:
+            return average
 
     def count(self):
         return self.queue.qsize()
