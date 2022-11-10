@@ -15,7 +15,7 @@ class Step(ABC):
     def enable(self, recursive=True):
         if not self._tasks:
             for i in range(self.workers):
-                self._tasks.append(asyncio.Task(self._run_worker()))
+                self._tasks.append(asyncio.create_task(self._run_worker()))
         if recursive and self.next:
             self.next.enable(recursive)
 
