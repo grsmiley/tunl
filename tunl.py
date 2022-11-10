@@ -54,7 +54,7 @@ class Step(ABC):
     async def join(self):
         await self.queue.join()
         if self.next:
-            await self.next.queue.join()
+            await self.next.join()
 
     def execution_time(self, recursive=False):
         ''' Average execution time in seconds. '''
