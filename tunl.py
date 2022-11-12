@@ -1,8 +1,7 @@
 import asyncio, time, inspect
 from collections import deque
-from abc import ABC, abstractmethod
 
-class Step(ABC):
+class Step():
     def __init__(self, workers=1, maxsize=None, func=None):
         self.workers = workers
         self.maxsize = maxsize
@@ -44,9 +43,8 @@ class Step(ABC):
             self._time_samples.append(time.monotonic_ns()-start)
             self.queue.task_done()
 
-    @abstractmethod
     async def run(self, item, outq):
-        pass
+        await outq.put(item)
 
     async def __call__(self, item):
         await self.queue.put(item)
