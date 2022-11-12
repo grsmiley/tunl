@@ -2,10 +2,11 @@ import asyncio, time, inspect
 from collections import deque
 
 class Step():
-    def __init__(self, workers=1, maxsize=None, func=None):
+    def __init__(self, workers=1, maxsize=None, func=None, handle_exceptions=False):
         self.workers = workers
         self.maxsize = maxsize
         self.func = func
+        self.handle_exceptions = handle_exceptions
         self.next = None
         self.queue = asyncio.Queue(maxsize=maxsize or 0)
         self._time_samples = deque(maxlen=10)
@@ -37,9 +38,28 @@ class Step():
         while True:
             item = await self.queue.get()
             outq = self.next.queue if self.next else dq
+            
+            # short-circuit if exception routing turned on
+            if not self.handle_exceptions and isinstance(item, Exception):
+                # if this is the last step and it does not handle exceptions, raise the exception
+                if not self.next:
+                    raise item
+                else:
+                    await outq.put(item)
+                    self.queue.task_done()
+                    continue
+            
             func = self.func or self.run
             start = time.monotonic_ns()
-            await func(item, outq)
+            try:
+                await func(item, outq)
+            except Exception as e:
+                if not self.handle_exceptions:
+                    await outq.put(e)
+                    self.queue.task_done()
+                    continue
+                else:
+                    raise
             self._time_samples.append(time.monotonic_ns()-start)
             self.queue.task_done()
 
